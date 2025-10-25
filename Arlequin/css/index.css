@@ -1,0 +1,794 @@
+@import url('https://fonts.googleapis.com/css2?family=Ubuntu&display=swap');
+
+
+* {
+    font-family: 'Ubuntu', sans-serif;
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+a{text-decoration: none;}
+:root {
+    /* Colores */
+    --very-light-pink: #c7c7c7;
+    --white: #FFF;
+    --text-input-field: #f7f7f7;
+    --hospital-green: #ACD9B2;
+    --header: #940a17;
+    --rojo: #5c0918;
+    --libros: #c7ecf7;
+    --fondo: #fffbf4;
+    --bitcoin-orange: #f7931a;
+    --soft-orange: #ffe9d5;
+    --soft-blue: #e7f5ff;
+    --soft-red: #ffe7e7;
+    --warm-black: #282623;
+    --black: #201e1c;
+    --off-white: #faf7f7;
+    --just-white: #fff;
+    --grey: #bababa;
+    --sm: 14px;
+    --md: 16px;
+    --lg: 18px;
+}
+
+.headerInicio {
+    background-color: black;
+    width: 100%;
+    height: 60px;
+    color: white;
+    z-index: 100%;
+}
+
+.headerInicio p {
+    line-height: 50px;
+    margin-left: 20px;
+}
+
+header a {
+    text-decoration: none;
+    color: white;
+    transition: .5s linear;
+}
+
+header a:hover {
+    color: #ecde14;
+    font-weight: bold;
+}
+
+.containerPrincipal {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 5px;
+    height: 500px;
+}
+
+.containerInicio {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+}
+
+.containerInicio {
+    background-image: url(../assets/img/Azul\ Naranja\ Objetos\ Sitio\ Web\ De\ Educación.png);
+    background-repeat: no-repeat;
+    zoom: 40%;
+    background-size: cover;
+}
+
+.containerInicio:nth-child(2) {
+    background-image: none;
+    background-color: white;
+    display: grid;
+    grid-template-rows: 1fr 4fr;
+}
+
+.containerInicio:nth-child(3) {
+    background-image: url(../assets/img/mujer.png);
+}
+
+#registro {
+    background-image: url(../assets/img/Libros.png);
+    background-size: 70%;
+}
+
+#registro1 {
+    background-image: none;
+    display: grid;
+    grid-template-rows: 1fr 4fr;
+    background: white;
+}
+
+
+
+.titulo h1 {
+    font-size: 90px;
+    line-height: 120px;
+}
+
+.titulo h2 {
+    font-size: 40px;
+}
+
+.formulario {
+    width: 100%;
+    height: 100%;
+    display: inline-block;
+    flex-flow: row wrap;
+}
+
+.formulario form {
+    height: 100%;
+}
+
+.input {
+    margin-left: 10%;
+    margin-bottom: 40px;
+}
+
+.label {
+    margin-left: 10%;
+    margin-bottom: 40px;
+}
+
+#label {
+    font-size: 50px;
+    color: #5c0918;
+    font-weight: bold
+}
+
+#input {
+    background-color: rgb(173, 171, 171);
+    border: none;
+    color: white;
+    width: 80%;
+    height: 80px;
+    font-size: 30px;
+}
+
+#input::placeholder {
+    margin-left: 20px;
+
+}
+
+#inputS {
+    margin-left: 20%;
+    background-color: rgb(99, 2, 2);
+    border: none;
+    color: white;
+    width: 50%;
+    height: 80px;
+    font-size: 30px;
+    cursor: pointer;
+}
+
+.footer {
+    text-align: center;
+    color: white;
+    background-color: black;
+    height: 60px;
+    width: 100%;
+}
+
+/*             Pagina del usuario despues de iniciar sesion y parte de la bibliotecaria             */
+.headerInicio-Usuario {
+    position: fixed;
+    background-color: black;
+    width: 100%;
+    height: 60px;
+    color: white;
+    display: flex;
+    justify-content: space-evenly;
+    flex-flow: row wrap;
+    overflow: hidden;
+}
+
+.headerContenedor {
+    width: 20%;
+    height: 100%;
+}
+
+.headerContenedor:nth-child(2) {
+    width: 70%;
+    height: 100%;
+}
+
+.headerContenedor:nth-child(2)>nav ul>li {
+    float: right;
+}
+
+.headerContenedor:nth-child(3) {
+    width: 10%;
+    height: 100%;
+}
+
+.headerContenedor nav>ul {
+    list-style: none;
+}
+
+.headerContenedor>nav ul>li {
+    float: left;
+    margin: 10px;
+    line-height: 40px;
+}
+
+.fotoPerfil {
+    width: 75%;
+    margin: 0 auto;
+    height: 100%;
+    overflow: hidden;
+}
+
+.fotoPerfil img {
+    height: 40px;
+    margin-left: 28px;
+}
+
+.fotoPerfil h2 {
+    font-size: 15px;
+    text-align: center;
+}
+
+.headerContenedor>nav ul>li img {
+    height: 60px;
+}
+.button{
+    width: 100px;
+    height: 40px;
+    border: none;
+    background-color: #940a17;
+    color: white;
+    font-weight: bold;
+    transition: background-color 1s linear;
+    cursor: pointer;
+}
+.button:hover{
+    background-color: black;
+    border: 4px solid #940a17 ;
+}
+.busqueda--buscar{
+    width: 200px;
+    height: 40px;
+    border: none;
+    background-color: #940a17;
+    color: white;
+    font-weight: bold;
+    transition: background-color 1s linear;
+}
+.busqueda--buscar:focus{
+    border: none;
+}
+.busqueda--buscar:active{
+    border: none;
+}
+
+.container-Menu-Usuario {
+    width: 100%;
+    height: 1100px;
+    /*background-color: #282623;*/
+    display: flex;
+    justify-content: space-around;
+}
+
+.contenedores_Usuario {
+    width: 20%;
+    height: 100%;
+}
+
+.botones {
+    width: 100%;
+    height: 55%;
+    margin-top: 50%;
+}
+
+.boton {
+    background-color: #940a17;
+    width: 100%;
+    height: 80px;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.boton:nth-child(2) {
+    background-color: black;
+}
+
+.boton:nth-child(3) {
+    background-color: black;
+}
+
+.boton a {
+    color: white;
+    font-weight: bold;
+    line-height: 60px;
+    text-decoration: none;
+}
+
+.redes {
+    width: 100%;
+    height: 35%;
+}
+
+.redes img {
+    height: 80px;
+    margin-left: 70px;
+}
+
+.contenedores_Usuario:nth-child(2) {
+    width: 80%;
+    height: 96%;
+    overflow: hidden;
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+
+.container_libros {
+    width: 98%;
+    margin: 0 auto;
+    overflow: hidden;
+    height: 90%;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 18px;
+    margin-top: 40px;
+}
+
+.libros {
+    background-color: #dbd5d5;
+    border: 2px solid #5a555585;
+    border-radius: 5px;
+    padding: 10px;
+    width: 100%;
+    height: 95%;
+    margin: 0 auto;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.libros img {
+    max-width: 250px;
+    height: 250px;
+    border-radius: 5px;
+    margin-bottom: 10px;
+}
+
+.libros h3 {
+    font-size: 18px;
+    margin-bottom: 5px;
+}
+
+.libros p {
+    font-size: 14px;
+    margin-bottom: 10px;
+}
+
+.libros button {
+    background-color: #000;
+    color: #fff;
+    padding: 5px 10px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.paginacion {
+    width: 100%;
+    height: 40px;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+    font-size: 20px;
+}
+
+.paginacion span {
+    margin: 15px;
+    color: black;
+    font-weight: bold;
+}
+
+/* pagina de la bibliotecaria */
+.container-menu-admin {
+    display: flex;
+    justify-content: space-evenly;
+    width: 100%;
+    height: 700px;
+}
+
+.container_Admin {
+    height: 70%;
+    width: 40%;
+    margin-right: 80px;
+    display: grid;
+    grid-column: 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
+    margin-top: 8%;
+    gap: 4px;
+}
+
+.bton_opcion_admin {
+    background-color: #030301;
+    text-align: center;
+    transition: 0.5s linear;
+}
+
+.bton_opcion_admin:nth-child(2) {
+    background-color: #f36a0e;
+}
+
+.bton_opcion_admin:nth-child(3) {
+    background-color: #f7931a;
+}
+
+.bton_opcion_admin:nth-child(4) {
+    background-color: rgb(26, 12, 145);
+}
+
+.bton_opcion_admin:nth-child(5) {
+    background-color: rgb(140, 250, 96);
+}
+
+.bton_opcion_admin a {
+    text-decoration: none;
+    line-height: 100px;
+    font-size: 26px;
+    font-weight: bold;
+    color: white;
+}
+
+.bton_opcion_admin:hover {
+    background-color: #330202;
+}
+
+.redes_admin {
+    height: 300px;
+    width: 20%;
+    margin-top: 90px;
+
+}
+
+.redes_admin ul {
+    list-style: none;
+}
+
+.redes_admin img {
+    height: 90px;
+}
+
+/** registro de estudiantes por la bibliotecaria */
+.main-registro_estudiantes {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background-color: #dbdbdb;
+}
+
+.main-registro_estudiantes form {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.2);
+    padding: 50px 35px;
+    border-radius: 25px;
+    display: flex;
+    flex-direction: column;
+    text-align: center;
+    width: 380px;
+}
+
+.main-registro_estudiantesform h2 {
+    font-size: 35px;
+    color: rgb(0, 0, 0);
+    margin: 0;
+}
+
+.main-registro_estudiantesform form p {
+    font-size: 16px;
+    color: hwb(0 35% 65%);
+    margin-bottom: 35px;
+}
+
+.input-wrapper {
+    position: relative;
+    width: 305px;
+    margin-bottom: 35px;
+}
+
+.input-wrapper> input {
+    color: black;
+    padding: 20px 15px 20px 60px;
+    width: 100%;
+    border-radius: 25px;
+    border: 0;
+    box-shadow: 0 0 20px rgba(192, 203, 251, 0.7);
+    outline: none;
+    z-index: 0;
+}
+.input-wrapper select {
+    color: black;
+    padding: 20px 15px 20px 60px;
+    width: 100%;
+    border-radius: 25px;
+    border: 0;
+    box-shadow: 0 0 20px rgba(192, 203, 251, 0.7);
+    outline: none;
+}
+
+.input-wrapper > input::placeholder {
+    font-size: 16px;
+    color: #BBBBE2;
+}
+
+.input-icon {
+    position: absolute;
+    height: 30px;
+    width: 30px;
+    left: 20px;
+    top: 50%;
+    transform: translateY(-55%);
+}
+
+.btn {
+    padding: 20px;
+    background: linear-gradient(90deg, rgb(231, 43, 43) 25%, rgb(245, 99, 1) 100%);
+    box-shadow: 0 0 20px rgba(251, 192, 192, 0.7);
+    color: #fff;
+    text-transform: uppercase;
+    font-size: 14px;
+    cursor: pointer;
+    transition: 0.9S linear;
+    border: none;
+    border-radius: 10px;
+    height: 50px;
+    transition: 1s background-color linear;
+}
+
+.btn:hover {
+    background: rgb(252, 47, 47);
+}
+
+.succes {
+    position: absolute;
+    top: 50px;
+    color: #00c83c;
+    font-size: 18px;
+}
+
+.error {
+    position: absolute;
+    top: 50px;
+    color: #e02d00;
+    font-size: 18px;
+}
+
+@media(max-width:991px) {
+    body {
+        padding: 10px;
+    }
+
+    form {
+        padding: 20px;
+        width: 100%;
+    }
+
+    .input-wrapper {
+        position: relative;
+        width: 88%;
+        margin-bottom: 35px;
+    }
+
+    input {
+        padding: 20px 0px 20px 45px;
+    }
+
+    .input-icon {
+        height: 20px;
+        width: 20px;
+    }
+
+}
+
+/*   detalle_libro   */
+.contenedor-detalle{
+    width: 100%;
+    height: 900px;
+    display: flex;
+    justify-content: space-between;
+}
+.contenedor-informacion{
+    width: 80%;
+    height: 100%;
+    display: flex;
+    justify-content: space-around; 
+}
+.imagen-detalle{
+    border: 2px solid black;
+    width: 20%;height: 40%;overflow: hidden;
+    margin-top: 100px;margin-left: 20px;
+}
+.imagen-detalle img{
+    width: 100%;
+    height: 100%;
+}
+.texto{
+
+    width: 60%;
+    height: 60%;
+    margin-top: 100px;
+    margin-right: 10px;
+}
+.texto-detall-libro{
+    width: 100%;
+    height: 120px;
+    margin-right: 10px;
+    text-align: justify;
+    margin-bottom: 5px;
+}
+.texto-detall-libro h1{
+    border: 2px solid black;
+    font-size: 30px;
+    font-weight: bold;
+    margin-bottom: 10px;
+    text-align: center;
+}
+.texto-detall-libro p{
+    margin-bottom: 5px;
+}
+.resumen{
+    transition: background-color 0.5s linear ;
+    width: 100%;
+    height: 60%;
+    margin-right: 10px;
+    text-align: justify;
+    overflow-y: scroll;
+}
+.resumen:hover{
+    background-color: #9dc2dd;
+}
+.resumen span{
+    font-size: 20px;
+    font-weight: bold;
+}
+.resumen p{
+    margin-right: 10px;
+}
+.bon-reserva{
+    width: 100%;
+    height: 90px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+.bon-reserva button{
+    margin: 5px;
+    width: 30%;
+    height: 40px;
+    border: none;
+    background-color: #940a17;
+    color: white;
+    font-weight: bold;
+    transition: background-color 1s linear;
+    cursor: pointer;
+}
+.bon-reserva button:hover{
+    background-color: white;
+    color: #000;
+    border: 1px solid #330202;
+}
+.bon-reserva button >a:hover{
+    color: #000;
+}
+.bon-reserva a{
+    text-decoration: none;
+    color: white;
+}
+.relacionado{
+    border: 2px solid black;
+    height: 100%;
+    width: 20%;
+}
+.titulorelacion{
+    width: 100%;
+    text-align: center;
+    margin-top: 100px;
+}
+.titulorelacion h1{
+    font-size: 90%;
+}
+.contenedor-libro-interes{
+    overflow: hidden;
+    background-color: #8a3d42;
+    width: 100%;
+    height: 80%;
+    display: grid;
+    grid-template-rows: 1fr;
+    grid-template-columns: repeat(1fr 1fr) ;
+}
+.contenedor-libro-interes img{
+    width: 100%;
+    height: 50%;
+}
+#sugerencia-libros{
+    height: 70%;
+    width: 80%;
+}
+/*                        perfil       */
+.contenedor-perfil{
+ width: 100%;
+ height: 800px;
+ display: flex;
+ justify-content: space-around;
+}
+.foto-perfil{
+    width: 40%;
+    height: 90%;
+}
+.cuadro-foto{
+    border: 2px solid black;
+    width: 60%;
+    height: 40%;
+    margin: 20% auto;
+    margin-bottom: 50px;
+    border-radius: 50%;
+    overflow: hidden;
+}
+.cuadro-foto img{
+    height: 90%;
+    width: 100%;
+}
+.cuadro-texto{
+    margin: 0 auto;
+    width: 70%;
+    height: 20%;
+    text-align: center;
+}
+.cuadro-texto h3{
+    margin-right: 80%;
+    margin-bottom: 5%;
+    color: #5c5354;
+}
+.cuadro-texto >button{
+    width: 50%;
+    height: 20%;
+    margin: 0 auto;
+    background-color: #5c5354;
+    border: none;
+    transition: 1s background-color linear;
+    transition: 1s box-shadow linear;
+}
+.cuadro-texto>button:hover{
+    background-color: #5c0918;
+    box-shadow: 5px 5px 2px rgba(117, 117, 231, 0.685);
+}
+.cuadro-texto>button>a{
+    text-decoration: none;
+    color: #f3f3f3;
+    font-weight: bold;
+}
+.info{
+    width: 60%;
+    height: 100%;
+}
+.info>h2{
+    text-align: center;
+    margin-top: 10%;
+    border-bottom: 2px solid rgb(173, 171, 171);
+}
+.info-contenedor-texto{
+    width: 100%;
+    height: 80%;
+    display: flex;
+    justify-content: space-evenly;
+}
+.contenedor0{
+    width: 50%;
+    height: 90%;
+    margin-top: 8%;
+    text-align: center;
+}
+.contenedor0>input{
+    width: 50%;
+    height: 6%;
+    text-align: center;
+    margin-bottom: 10%;
+}
+#p1{
+    line-height: 50px;
+}

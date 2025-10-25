@@ -1,0 +1,127 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang3082{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil Calibri;}{\f2\fnil\fcharset1 Cambria Math;}{\f3\fnil\fcharset1 Segoe UI Symbol;}}
+{\*\generator Riched20 10.0.19041}{\*\mmathPr\mmathFont2\mwrapIndent1440 }\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\lang10 ### Resumen del C\'f3digo PHP\par
+\par
+Este script PHP es un **controlador b\'e1sico para el registro de usuarios en una base de datos MySQL**, parte de un sistema de autenticaci\'f3n (posiblemente el proyecto "Arlequin" de biblioteca). Procesa un formulario POST enviado cuando se presiona un bot\'f3n "register", validando que todos los campos (nombre, apellido, documento, grado, correo, contrase\'f1a) tengan al menos un car\'e1cter. Si es v\'e1lido, inserta los datos en la tabla `usuarios` usando una consulta SQL concatenada y muestra un mensaje de \'e9xito o error en HTML simple (clases CSS como "success" o "error"). El c\'f3digo es corto (~30 l\'edneas), enfocado en simplicidad, pero carece de seguridad avanzada (ej. hashing de contrase\'f1as) y validaciones robustas. No redirige ni maneja sesiones; solo muestra feedback inline.\par
+\par
+**Prop\'f3sito Principal:** Permitir el registro de nuevos usuarios (estudiantes o administradores) sin login previo, asumiendo que se integra en una p\'e1gina de formulario (ej. `register.php`).\par
+\par
+**Entrada:** `$_POST['register']` (bot\'f3n de env\'edo), m\'e1s campos POST: `name`, `apellido`, `documento`, `grado`, `correo`, `password`.\par
+\par
+**Salida:** Inserci\'f3n en DB + mensaje HTML de \'e9xito/error, o "Llena todos los campos" si faltan datos.\par
+\par
+**Dependencias:** `../../conexion-bd/conexion_bd.php` (conexi\'f3n DB con `$conexion` como objeto mysqli). Tabla `usuarios` con columnas: `nombre`, `apellido`, `documento`, `correo`, `contrasena`, `grado`.\par
+\par
+### Explicaci\'f3n Paso a Paso\par
+\par
+El c\'f3digo se ejecuta en un contexto de p\'e1gina PHP (ej. incluido en un formulario HTML). Aqu\'ed va el flujo detallado:\par
+\par
+1. **Inclusi\'f3n de la Conexi\'f3n a la Base de Datos:**\par
+   - `include_once("../../conexion-bd/conexion_bd.php");`\par
+     - Carga el archivo de conexi\'f3n (usa `include_once` para evitar inclusiones m\'faltiples).\par
+     - Asume que define `$conexion` (objeto mysqli conectado a la DB, ej. `new mysqli('localhost', 'root', '', 'arlequin')`).\par
+     - **Prop\'f3sito:** Prepara la conexi\'f3n para ejecutar queries SQL.\par
+     - **Nota:** Si la ruta es incorrecta o la conexi\'f3n falla, el script crashea con error fatal (no hay manejo).\par
+\par
+2. **Verificaci\'f3n del Env\'edo del Formulario:**\par
+   - `if (isset($_POST['register'])) \{ ... \}`\par
+     - Chequea si se envi\'f3 el formulario v\'eda POST y existe el campo `register` (t\'edpicamente un `<input type="submit" name="register" value="Registrar">` en el HTML).\par
+     - **Si no se env\'eda:** El script no hace nada (ideal para p\'e1ginas con formulario visible).\par
+     - **Si se env\'eda:** Procede a la validaci\'f3n.\par
+\par
+3. **Validaci\'f3n de Campos Requeridos:**\par
+   - `if (strlen($_POST['name']) >= 1 && strlen($_POST['apellido']) >= 1 && ... strlen($_POST['password']) >= 1) \{ ... \}`\par
+     - Usa `strlen()` para verificar que cada campo POST tenga al menos 1 car\'e1cter (longitud >=1).\par
+     - Campos validados: `name`, `apellido`, `documento`, `grado`, `correo`, `password`.\par
+     - **Si todos son v\'e1lidos:** Limpia y procesa los datos (ver paso 4).\par
+     - **Si alguno est\'e1 vac\'edo:** Muestra `<h3 class="error">Llena todos los campos</h3>` y sale del if (no inserta nada).\par
+     - **Limitaci\'f3n:** Validaci\'f3n muy b\'e1sica; no chequea formatos (ej. email v\'e1lido con `@`, documento num\'e9rico, password fuerte). Permite espacios o caracteres especiales sin sanitizar.\par
+\par
+4. **Limpieza y Preparaci\'f3n de Datos:**\par
+   - Dentro del if de validaci\'f3n:\par
+     - `$name = trim($_POST['name']);` (y similar para otros campos).\par
+     - `trim()` elimina espacios en blanco al inicio/fin de cada string (buena pr\'e1ctica para evitar datos sucios).\par
+     - **Comentario inactivo:** `//$fecha = date("d/m/y");` \f1\endash  Parece un remanente para agregar fecha de registro, pero est\f0\'e1 desactivado.\par
+     - **Prop\'f3sito:** Prepara variables limpias para la inserci\'f3n en DB.\par
+\par
+5. **Ejecuci\'f3n de la Consulta SQL (Inserci\'f3n):**\par
+   - Construye la query: \par
+     ```sql\par
+     INSERT INTO usuarios (nombre, apellido, documento, correo, contrasena, grado) \par
+     VALUES('$name', '$apellido', '$documento', '$correo', '$password', '$grado')\par
+     ```\par
+     - Tabla: `usuarios`.\par
+     - Columnas: 6 campos (nota: `contrasena` para password; no hay ID auto-increment asumido).\par
+     - Valores: Concatenados directamente (sin escape; vulnerable a SQL injection, ej. si `$name` contiene `' OR '1'='1`).\par
+   - `$resultado = mysqli_query($conexion, $consulta);`\par
+     - Ejecuta la INSERT.\par
+     - **Si \'e9xito (`if($resultado)`):** Muestra `<h3 class="success">Tu registro se a completado</h3>` (nota: error tipogr\'e1fico "se a" deber\'eda ser "se ha").\par
+     - **Si error:** Muestra `<h3 class="error">Ocurrio un error</h3>` (sin detalles; no usa `mysqli_error($conexion)` para debug).\par
+     - **No cierra conexi\'f3n:** Falta `mysqli_close($conexion);` al final (buena pr\'e1ctica).\par
+\par
+6. **Salida y Cierre:**\par
+   - Los mensajes se imprimen directamente en HTML (asume que el script est\'e1 en una p\'e1gina con <body>).\par
+   - No hay redirecci\'f3n (ej. a login); el usuario ve el mensaje y posiblemente el formulario de nuevo.\par
+   - **Fin del script:** Si no hay POST o validaci\'f3n falla, no muestra nada (p\'e1gina vac\'eda o formulario visible).\par
+\par
+### Componentes Clave\par
+- **Variables Principales:**\par
+  - De entrada: `$_POST['name']`, `$_POST['apellido']`, `$_POST['documento']`, `$_POST['grado']`, `$_POST['correo']`, `$_POST['password']`, `$_POST['register']`.\par
+  - Procesadas: `$name`, `$apellido`, etc. (strings limpios con `trim()`).\par
+- **Funciones y M\'e9todos Usados:**\par
+  - `include_once()`: Carga segura de archivo.\par
+  - `isset()`: Verifica existencia de POST.\par
+  - `strlen()`: Mide longitud de strings para validaci\'f3n.\par
+  - `trim()`: Limpia espacios.\par
+  - `mysqli_query()`: Ejecuta SQL (devuelve true/false para \'e9xito/error).\par
+- **Estructura DB Asumida:**\par
+  - Tabla: `usuarios`.\par
+  - Columnas: `nombre` (VARCHAR), `apellido` (VARCHAR), `documento` (VARCHAR/INT), `correo` (VARCHAR), `contrasena` (VARCHAR), `grado` (VARCHAR).\par
+  - No menciona clave primaria (ej. `id` AUTO_INCREMENT) ni \'edndices (ej. UNIQUE en `correo` para evitar duplicados).\par
+- **Integraci\'f3n con HTML:** El script se incluye en una p\'e1gina con formulario (ej. `<form method="POST">` con inputs para cada campo y submit `name="register"`). Los <h3> se insertan din\'e1micamente.\par
+\par
+### Posibles Errores y Mejoras\par
+- **Errores Potenciales:**\par
+  - **Seguridad Cr\'edtica - SQL Injection:** Concatenaci\'f3n directa de variables en SQL (ej. `$consulta = "INSERT ... VALUES('$name', ...)"`). Un atacante puede inyectar c\'f3digo malicioso v\'eda POST (ej. nombre con comillas). **Soluci\'f3n:** Usa prepared statements con `?` placeholders y `bind_param()`.\par
+  - **Contrase\'f1a No Segura:** Almacena `$password` en plano (sin hashing como `password_hash($password, PASSWORD_DEFAULT)`). F\'e1cil de robar si DB es comprometida. **Soluci\'f3n:** Hash antes de insertar; verifica con `password_verify()` en login.\par
+  - **Validaci\'f3n D\'e9bil:** Solo chequea longitud >=1; permite emails inv\'e1lidos (ej. "abc"), documentos con letras, passwords cortas. No previene duplicados (ej. mismo correo).\par
+  - **Errores Tipogr\'e1ficos/Ortogr\'e1ficos:** "se a completado" \f2\u8594?\f0  "se ha completado"; "Ocurrio" \f2\u8594?\f0  "Ocurri\'f3". No maneja errores DB (ej. si tabla no existe o conexi\'f3n falla).\par
+  - **Falta de Sanitizaci\'f3n:** `trim()` es bueno, pero no escapa HTML (posible XSS si outputs en p\'e1gina). No valida tipos (ej. `documento` como n\'famero).\par
+  - **No Hay Manejo de Duplicados:** Si correo ya existe, INSERT falla silenciosamente (error gen\'e9rico).\par
+  - **Rendimiento/Seguridad Adicional:** No limita intentos de registro (posible spam). Fecha comentada podr\'eda usarse para `created_at`.\par
+\par
+- **Mejoras Recomendadas (Versi\'f3n Segura):**\par
+  - **Prepared Statements y Hashing:**\par
+    ```php\par
+    if (isset($_POST['register'])) \{\par
+        // Validaci\'f3n mejorada (agrega filter_var para email, etc.)\par
+        if (strlen($_POST['name']) >= 1 && filter_var($_POST['correo'], FILTER_VALIDATE_EMAIL) && strlen($_POST['password']) >= 6) \{\par
+            $name = mysqli_real_escape_string($conexion, trim($_POST['name']));\par
+            // ... similar para otros\par
+            $password_hash = password_hash(trim($_POST['password']), PASSWORD_DEFAULT);  // Hash seguro\par
+\par
+            $stmt = $conexion->prepare("INSERT INTO usuarios (nombre, apellido, documento, correo, contrasena, grado) VALUES (?, ?, ?, ?, ?, ?)");\par
+            $stmt->bind_param("ssssss", $name, $apellido, $documento, $correo, $password_hash, $grado);\par
+            \par
+            if ($stmt->execute()) \{\par
+                echo '<h3 class="success">Registro completado. Redirigiendo...</h3>';\par
+                header("Location: login.php");  // Redirige a login\par
+                exit;\par
+            \} else \{\par
+                echo '<h3 class="error">Error: ' . $stmt->error . '</h3>';  // Muestra detalle\par
+            \}\par
+            $stmt->close();\par
+        \} else \{\par
+            echo '<h3 class="error">Campos inv\'e1lidos (verifica email y password >6 chars)</h3>';\par
+        \}\par
+    \}\par
+    mysqli_close($conexion);\par
+    ```\par
+  - **Agrega UNIQUE en DB:** En phpMyAdmin: `ALTER TABLE usuarios ADD UNIQUE (correo);`.\par
+  - **Validaciones Avanzadas:** Usa `filter_var()` para email, `ctype_digit()` para documento, longitud m\'ednima para password.\par
+  - **UI/UX:** Agrega redirecci\'f3n con `header()` o JS. Usa sesiones para mensaje flash (ej. `$_SESSION['success'] = 'Registrado';`).\par
+  - **Seguridad Extra:** CAPTCHA para anti-spam, rate limiting. Almacena fecha: Agrega columna `fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP`.\par
+\par
+Este c\'f3digo es un buen punto de partida para un registro simple, pero prioriza la seguridad antes de usarlo en producci\'f3n. Si necesitas la versi\'f3n corregida completa o integraci\'f3n con login, \'a1av\'edsame! \f3\u-10179?\u-8694?\f0\lang10\par
+}
+ 

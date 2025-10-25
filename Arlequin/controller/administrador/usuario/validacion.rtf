@@ -1,0 +1,170 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang3082{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil Calibri;}{\f2\fnil\fcharset1 Segoe UI Symbol;}}
+{\*\generator Riched20 10.0.19041}\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\lang10 ### Resumen del C\'f3digo PHP\par
+\par
+Este script PHP es un **controlador b\'e1sico para el login/autenticaci\'f3n de usuarios** en una aplicaci\'f3n web (probablemente el proyecto "Arlequin" de biblioteca). Se integra con un formulario HTML (ej. en `index.html`) que env\'eda email y contrase\'f1a v\'eda POST. Verifica las credenciales en dos tablas de la base de datos: `usuarios` (para usuarios normales/estudiantes) y `directivos` (para administradores). Si las credenciales coinciden, inicia una sesi\'f3n PHP guardando el email en `$_SESSION['email']` y redirige al panel correspondiente (usuario o admin). Si no coinciden, muestra una alerta JavaScript "Datos incorrectos" y redirige a `index.html`. Si no hay POST (ej. acceso directo al script), muestra otra alerta "Los campos no pueden estar vac\'edos" y redirige. El c\'f3digo es corto (~30 l\'edneas), enfocado en simplicidad, pero tiene **vulnerabilidades graves** (SQL injection, contrase\'f1as almacenadas en texto plano) y l\'f3gica ineficiente (consultas redundantes, session_start() mal colocado). No valida campos vac\'edos ni maneja errores de conexi\'f3n DB. Asume conexi\'f3n en `conexion_bd.php` y estructura de carpetas como `vista/layout/usuario/` y `vista/layout/admin/`.\par
+\par
+**Prop\'f3sito Principal:** Autenticar usuarios y redirigir a dashboards basados en rol (usuario vs admin), usando sesiones para mantener el estado.\par
+\par
+**Entrada:** `$_POST['email']` y `$_POST['password']` (de formulario).\par
+\par
+**Salida:** Redirecci\'f3n con sesi\'f3n iniciada (\'e9xito) o alerta JS + redirecci\'f3n (error/no POST).\par
+\par
+**Dependencias:** `../../conexion-bd/conexion_bd.php` (conexi\'f3n DB con `$conexion`). Tablas: `usuarios` y `directivos` (columnas: `correo`, `contrasena`).\par
+\par
+**Limitaciones:** No seguro para producci\'f3n; usa queries concatenadas y no hashea contrase\'f1as. El script JS final siempre alerta si no hay POST, lo que puede ser molesto.\par
+\par
+### Explicaci\'f3n Paso a Paso\par
+\par
+El c\'f3digo se ejecuta cuando se accede al archivo (ej. `login.php`), t\'edpicamente v\'eda env\'edo de formulario desde `index.html`. Aqu\'ed va el flujo detallado, secci\'f3n por secci\'f3n:\par
+\par
+1. **Inclusi\'f3n de la Conexi\'f3n a la Base de Datos (L\'ednea ~2):**\par
+   - `include '../../conexion-bd/conexion_bd.php';`\par
+     - Carga el archivo de conexi\'f3n (usa `include` simple; mejor `include_once` para evitar duplicados).\par
+     - Asume que define `$conexion` como objeto mysqli (ej. `new mysqli('localhost', 'root', '', 'biblioteca')`).\par
+     - **Prop\'f3sito:** Prepara la conexi\'f3n para ejecutar consultas SQL.\par
+     - **Comentario en c\'f3digo:** "// Con esto se incluye el archivo de conexion a la base de datos" \f1\endash  Explicaci\f0\'f3n interna.\par
+     - **Nota:** Si la ruta falla o conexi\'f3n no existe, crashea con error fatal (no hay try-catch).\par
+\par
+2. **Verificaci\'f3n del M\'e9todo de Solicitud (L\'edneas ~4-6):**\par
+   - `if ($_SERVER["REQUEST_METHOD"] == "POST") \{ ... \}`\par
+     - Chequea si la solicitud es POST (env\'edo de formulario). Si no (ej. GET directo al script), salta al bloque final (ver paso 6).\par
+     - **Comentario:** "// aca se reciven los datos del inicio de sesion // con htmlspecialchars es para que se admitan caracteres especiales" \f1\endash  El comentario menciona `htmlspecialchars`, pero **no se usa en el c\f0\'f3digo** (error; deber\'eda sanitizar `$email` y `$contrasena` para prevenir XSS/SQL, pero no lo hace).\par
+     - **Prop\'f3sito:** Asegura que solo procese datos de formulario enviado.\par
+\par
+3. **Obtenci\'f3n y Consulta de Datos para Usuarios Normales (L\'edneas ~8-15):**\par
+   - Dentro del if POST:\par
+     - `$email = $_POST["email"]; $contrasena = $_POST["password"];`\par
+       - Obtiene valores directos de POST (sin validaci\'f3n ni limpieza; permite vac\'edos o inyecciones).\par
+     - `$sql = "SELECT * FROM usuarios WHERE correo = '$email' AND contrasena = '$contrasena'";`\par
+       - Construye query SQL concatenada para buscar en tabla `usuarios` (columna `correo` y `contrasena`).\par
+       - **Vulnerable:** Inserta `$email` y `$contrasena` directamente (SQL injection posible, ej. email con `' OR '1'='1` para bypass).\par
+       - **Problema:** Compara contrase\'f1as en texto plano (inseguro; deber\'eda usar hashing).\par
+     - `$resultado = mysqli_query($conexion, $sql);`\par
+       - Ejecuta la consulta.\par
+     - `if (mysqli_num_rows($resultado) == 1) \{ ... \}`\par
+       - Si exactamente 1 fila (credenciales v\'e1lidas):\par
+         - `session_start(); $_SESSION['email'] = $email;`\par
+           - Inicia sesi\'f3n y guarda email (para uso en p\'e1ginas protegidas).\par
+           - **Error:** `session_start()` deber\'eda estar al inicio del script (antes de cualquier output), no aqu\'ed (puede causar "Headers already sent" si hay HTML previo).\par
+         - `header("Location: ../../../vista/layout/usuario/");`\par
+           - Redirige al panel de usuario (ruta absoluta relativa).\par
+           - **Nota:** No hay `exit;` despu\'e9s (buena pr\'e1ctica para detener ejecuci\'f3n).\par
+       - **Si no coincide:** Procede al else if (ver paso 4).\par
+\par
+4. **Consulta para Administradores/Directivos (L\'edneas ~16-25):**\par
+   - `else if ($_SERVER["REQUEST_METHOD"] == "POST") \{ ... \}`\par
+     - **Error L\'f3gico:** Esta condici\'f3n es redundante porque ya estamos dentro de `if (POST)`, as\'ed que siempre es true si llega aqu\'ed. Deber\'eda ser `else \{ ... \}` para chequear directivos solo si usuarios falla.\par
+     - `$sqla = "SELECT * FROM directivos WHERE correo = '$email' AND contrasena = '$contrasena'";`\par
+       - Similar query para tabla `directivos` (mismo problema de vulnerabilidad y texto plano).\par
+     - `$resultado = mysqli_query($conexion, $sqla);`\par
+       - Ejecuta.\par
+     - `if (mysqli_num_rows($resultado) == 1) \{ ... \}`\par
+       - Si coincide:\par
+         - `session_start(); $_SESSION['email'] = $email;`\par
+           - Inicia sesi\'f3n (redundante si ya se inici\'f3 arriba; pero como est\'e1 en else, no se ejecuta antes).\par
+         - `header("Location: ../../../vista/layout/admin/");`\par
+           - Redirige al panel admin.\par
+     - **Si no coincide (ning\'fan rol):** Procede al bloque de alerta.\par
+\par
+5. **Manejo de Error para Credenciales Inv\'e1lidas (L\'edneas ~26-32):**\par
+   - Dentro del else del directivos:\par
+     - `?> <script> alert("Datos incorrectos"); window.location.href = "../../../index.html"; </script> <?php`\par
+       - Cierra PHP, imprime alerta JS y redirige a p\'e1gina de login (`index.html`).\par
+       - **Prop\'f3sito:** Feedback de error simple (popup y vuelta al formulario).\par
+       - **Problema:** Mezcla PHP/JS sin estructura; mejor usar solo PHP con `header()` o sesiones para mensajes flash.\par
+\par
+6. **Bloque Final para No-POST o Errores Generales (L\'edneas ~33-38):**\par
+   - `\} else \{ ... \}` \f1\endash  Cierre del if POST inicial.\par
+     - `?> <script> alert("Los campos no pueden estar vacios"); window.location.href = "../../../index.html"; </script> <?php ?>`\par
+       - Si no es POST (ej. acceso directo), muestra alerta "Los campos no pueden estar vac\f0\'edos" y redirige.\par
+       - **Error:** Esta alerta se ejecuta **siempre** si no hay POST, incluso en accesos leg\'edtimos (molesto para bots o refrescos). El comentario inicial menciona validaci\'f3n de vac\'edos, pero **no hay chequeo real de empty($email)**.\par
+     - **Cierre extra:** `<?php ?>` al final \f1\endash  Innecesario y puede causar warnings.\par
+   - **Bloque else vac\f0\'edo (L\'ednea ~34):** Hay un `else \{ // Si no se encontr\'f3 el usuario, mostrar un mensaje de error \}` comentado pero vac\'edo \f1\endash  Remanente in\f0\'fatil.\par
+\par
+7. **Ejecuci\'f3n General:**\par
+   - El script no renderiza HTML propio; asume inclusi\'f3n en una p\'e1gina con formulario (ej. procesa POST y redirige).\par
+   - Si todo falla, el usuario ve alertas JS y vuelve a `index.html`.\par
+   - No cierra conexi\'f3n DB (`mysqli_close($conexion);` \f1\endash  buena pr\f0\'e1ctica faltante).\par
+\par
+### Componentes Clave\par
+- **Variables Principales:**\par
+  - De entrada: `$_POST["email"]`, `$_POST["password"]`.\par
+  - Sesi\'f3n: `$_SESSION['email']` (almacena email para p\'e1ginas protegidas).\par
+- **Funciones y M\'e9todos Usados:**\par
+  - `$_SERVER["REQUEST_METHOD"]`: Detecta POST.\par
+  - `mysqli_query()` y `mysqli_num_rows()`: Ejecuta y cuenta resultados SQL.\par
+  - `session_start()`: Inicia sesiones (mal colocado).\par
+  - `header("Location: ...")`: Redirecci\'f3n HTTP.\par
+  - JS inline: `alert()` y `window.location.href` para feedback/redirecci\'f3n (fallback si JS off, no funciona).\par
+- **Estructura DB Asumida:**\par
+  - Tablas: `usuarios` y `directivos` (separadas por rol; columnas: `correo` VARCHAR, `contrasena` VARCHAR).\par
+  - No menciona hashing (contrase\'f1as en plano) ni claves for\'e1neas.\par
+- **Integraci\'f3n:** Formulario en `index.html` con `<form method="POST" action="login.php"> <input name="email"> <input type="password" name="password"> <button type="submit">Login</button> </form>`. Despu\'e9s de login, p\'e1ginas como `index.php` chequean `if (!isset($_SESSION['email'])) \{ header('Location: login.php'); \}`.\par
+\par
+### Posibles Errores y Mejoras\par
+- **Errores Cr\'edticos:**\par
+  - **Seguridad - SQL Injection:** Concatenaci\'f3n directa en queries (ej. `WHERE correo = '$email'`). Atacante puede inyectar SQL v\'eda email/password. **Soluci\'f3n:** Usa prepared statements con `?` y `bind_param()`.\par
+  - **Contrase\'f1as Inseguras:** Almacena/compara en texto plano. F\'e1cil de crackear. **Soluci\'f3n:** Usa `password_hash()` al registrar y `password_verify($input, $hash)` al login.\par
+  - **L\'f3gica Redundante/Err\'f3nea:** `else if (POST)` siempre true (cambia a `else`). `session_start()` dentro de ifs (mueve al inicio). No valida vac\'edos (ej. `if (empty($email)) \{ alert("Vac\'edo"); \}`).\par
+  - **No Maneja Errores DB:** Si query falla (ej. tabla no existe), no muestra nada (usa `if (!$resultado) \{ echo $conexion->error; \}`).\par
+  - **Redirecci\'f3n Mixta:** JS + header() inconsistente; si JS off, redirecci\'f3n falla. Usa solo PHP `header()` con `exit;`.\par
+  - **Comentarios Inexactos:** Menciona `htmlspecialchars` pero no lo usa (agrega: `$email = htmlspecialchars(trim($_POST['email']));` para XSS).\par
+  - **Acceso Directo:** Alerta siempre si no POST (agrega chequeo: `if (!isset($_POST['email'])) \{ return; \}`).\par
+\par
+- **Mejoras Recomendadas (Versi\'f3n Segura):**\par
+  - **Estructura Corregida con Prepared y Hashing:**\par
+    ```php\par
+    <?php\par
+    session_start();  // Al inicio\par
+    include_once '../../conexion-bd/conexion_bd.php';\par
+\par
+    if ($_SERVER["REQUEST_METHOD"] == "POST") \{\par
+        $email = trim($_POST["email"] ?? '');\par
+        $contrasena = trim($_POST["password"] ?? '');\par
+\par
+        if (empty($email) || empty($contrasena)) \{\par
+            echo "<script>alert('Los campos no pueden estar vac\'edos'); window.location.href = '../../../index.html';</script>";\par
+            exit;\par
+        \}\par
+\par
+        // Prepared para usuarios\par
+        $stmt = $conexion->prepare("SELECT contrasena FROM usuarios WHERE correo = ?");\par
+        $stmt->bind_param("s", $email);\par
+        $stmt->execute();\par
+        $result = $stmt->get_result();\par
+        if ($row = $result->fetch_assoc()) \{\par
+            if (password_verify($contrasena, $row['contrasena'])) \{  // Verifica hash\par
+                $_SESSION['email'] = $email;\par
+                $_SESSION['rol'] = 'usuario';  // Agrega rol\par
+                header("Location: ../../../vista/layout/usuario/");\par
+                exit;\par
+            \}\par
+        \}\par
+\par
+        // Prepared para directivos (en else)\par
+        $stmt = $conexion->prepare("SELECT contrasena FROM directivos WHERE correo = ?");\par
+        $stmt->bind_param("s", $email);\par
+        $stmt->execute();\par
+        $result = $stmt->get_result();\par
+        if ($row = $result->fetch_assoc() && password_verify($contrasena, $row['contrasena'])) \{\par
+            $_SESSION['email'] = $email;\par
+            $_SESSION['rol'] = 'admin';\par
+            header("Location: ../../../vista/layout/admin/");\par
+            exit;\par
+        \}\par
+\par
+        // Error\par
+        echo "<script>alert('Datos incorrectos'); window.location.href = '../../../index.html';</script>";\par
+    \}\par
+    $conexion->close();\par
+    ?>\par
+    ```\par
+  - **DB:** Agrega hashing al registrar (ver c\'f3digo previo). Usa una tabla unificada `usuarios` con columna `rol` (ENUM: 'usuario', 'admin') para una sola query.\par
+  - **Seguridad Extra:** Limita intentos de login (session counter), usa HTTPS, valida email con `filter_var(FILTER_VALIDATE_EMAIL)`.\par
+  - **UI/UX:** Usa mensajes flash en sesiones (ej. `$_SESSION['error'] = 'Invalid';` y muestra en p\'e1gina destino). Evita alertas JS; usa modales HTML.\par
+  - **Testing:** Prueba con credenciales v\'e1lidas/inv\'e1lidas; verifica redirecciones en XAMPP.\par
+\par
+Este c\'f3digo funciona para un login b\'e1sico, pero prioriza fixes de seguridad antes de usarlo. Si necesitas la versi\'f3n corregida o integraci\'f3n con registro/login, \'a1av\'edsame! \f2\u-10179?\u-8694?\f0\par
+}
+ 

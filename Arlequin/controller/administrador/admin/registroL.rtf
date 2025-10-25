@@ -1,0 +1,110 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang3082{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil Calibri;}{\f2\fnil\fcharset1 Segoe UI Symbol;}}
+{\*\generator Riched20 10.0.19041}\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\lang10 ### Resumen del C\'f3digo PHP\par
+\par
+Este script PHP es un **controlador simple para registrar un nuevo libro en una base de datos MySQL**, manejando datos de un formulario POST (t\'edtulo, materia, resumen, autor, cantidad) y un upload de imagen (portada). Se incluye en un contexto de aplicaci\'f3n web (probablemente el proyecto "Arlequin" de biblioteca), y redirige al \'e9xito a un panel admin. El c\'f3digo es conciso (~40 l\'edneas), pero usa pr\'e1cticas b\'e1sicas de mysqli con algunos riesgos de seguridad y l\'f3gica mejorable. Asume una conexi\'f3n DB ya definida en `conexion_bd.php`.\par
+\par
+#### Descripci\'f3n General\par
+- **Prop\'f3sito:** Procesa el env\'edo de un formulario para agregar un libro a la tabla `libros`. Incluye validaci\'f3n b\'e1sica de imagen, almacenamiento en una carpeta (`register/`), e inserci\'f3n en DB. Al \'e9xito, muestra alerta JS y redirige; al fallo, imprime error.\par
+- **Entrada:** Datos de `$_POST` (campos del formulario) y `$_FILES['portada']` (upload de imagen).\par
+- **Salida:** Inserci\'f3n en DB + redirecci\'f3n, o mensaje de error.\par
+- **Dependencias:** Archivo `../../conexion-bd/conexion_bd.php` (define `$conexion` como objeto mysqli). Carpeta `../../../register/` para guardar im\'e1genes (ruta relativa desde el script).\par
+- **Limitaciones:** No valida tipos de datos (ej. cantidad como n\'famero), no crea la carpeta de uploads si no existe, y usa concatenaci\'f3n SQL (vulnerable a inyecciones aunque escapada).\par
+\par
+#### Flujo de Ejecuci\'f3n Paso a Paso\par
+1. **Inclusi\'f3n de Conexi\'f3n DB:**\par
+   - `include('../../conexion-bd/conexion_bd.php');` \f1\endash  Carga la conexi\f0\'f3n a la base de datos (asumiendo `$conexion` ya est\'e1 inicializada).\par
+\par
+2. **Procesamiento de Datos POST:**\par
+   - Obtiene y escapa valores de `$_POST` usando `mysqli_real_escape_string($conexion, ...)` para prevenir SQL injection b\'e1sica:\par
+     - `$titulo = ... $_POST['titulo']`\par
+     - `$materia = ... $_POST['materia']`\par
+     - `$resumen = ... $_POST['resumen']`\par
+     - `$nombreAutor = ... $_POST['autor']` (nota: campo 'autor' en POST, pero columna 'nombreAutor' en DB)\par
+     - `$cantidad = ... $_POST['cantidad']` (escapado como string, pero deber\'eda ser INT)\par
+     - `$estado = "Disponible";` (valor fijo)\par
+\par
+3. **Manejo de Upload de Imagen:**\par
+   - Extrae nombre y ruta temporal: `$nombreImagen = $_FILES['portada']['name']; $rutaImagen = $_FILES['portada']['tmp_name'];`\par
+   - **Validaci\'f3n b\'e1sica:** Si `$nombreImagen != ''` (se seleccion\'f3 archivo):\par
+     - Define ruta destino: `$rutaDestino = '../../../register/' . $nombreImagen;` (guarda en carpeta `register/` con nombre original).\par
+     - Mueve el archivo: `move_uploaded_file($rutaImagen, $rutaDestino);` (sube la imagen).\par
+   - **Si no hay imagen:** Muestra "Por favor seleccione una imagen" y `exit;` (detiene el script sin inserci\'f3n en DB).\par
+\par
+4. **Inserci\'f3n en Base de Datos:**\par
+   - Construye query SQL concatenada:\par
+     ```sql\par
+     INSERT INTO libros (tituloLibro, nombreAutor, materia, resumen, imagen, cantidad, estado) \par
+     VALUES ('$titulo', '$nombreAutor', '$materia', '$resumen', '$rutaDestino', '$cantidad', '$estado')\par
+     ```\par
+     - Columnas: 7 campos (incluyendo `imagen` para la ruta de la foto).\par
+     - Valores: Escapados, pero `$cantidad` tratado como string (deber\'eda ser sin comillas si es INT en DB).\par
+   - Ejecuta: `mysqli_query($conexion, $sql)`\par
+     - **\'c9xito:** Muestra alerta JS (`alert('Datos guardados');`) y redirige con `window.location.href= "../../../vista/layout/admin/";`.\par
+     - **Error:** Imprime "Error al guardar los datos: " + `mysqli_error($conexion)` (muestra detalles como columnas faltantes).\par
+\par
+5. **Cierre de Conexi\'f3n:**\par
+   - `mysqli_close($conexion);` \f1\endash  Libera recursos DB (buena pr\f0\'e1ctica, aunque no siempre necesario en scripts cortos).\par
+\par
+#### Componentes Clave\par
+- **Variables Principales:**\par
+  - Entrada: `$_POST['titulo']`, `$_POST['materia']`, `$_POST['resumen']`, `$_POST['autor']`, `$_POST['cantidad']`, `$_FILES['portada']`.\par
+  - Procesadas: `$titulo`, `$materia`, `$resumen`, `$nombreAutor`, `$cantidad`, `$estado` (fijo), `$rutaDestino` (ruta de imagen).\par
+- **Funciones Usadas:**\par
+  - `mysqli_real_escape_string()`: Escapa strings para SQL (5 veces; innecesario para `$cantidad` si es INT).\par
+  - `move_uploaded_file()`: Sube imagen (sin validaci\'f3n de tipo/extensi\'f3n, ej. solo JPG/PNG).\par
+  - `mysqli_query()`: Ejecuta INSERT.\par
+  - JS inline: Alerta y redirecci\'f3n (simple, pero mejor con PHP `header()` para redirecci\'f3n pura).\par
+- **Estructura DB Asumida:**\par
+  - Tabla: `libros`.\par
+  - Columnas: `tituloLibro` (VARCHAR), `nombreAutor` (VARCHAR), `materia` (VARCHAR), `resumen` (TEXT), `imagen` (VARCHAR para ruta), `cantidad` (INT), `estado` (VARCHAR).\par
+  - Si columnas no coinciden (ej. 'imagen' vs 'portada' de previos), fallar\'e1 con "Unknown column".\par
+\par
+#### Posibles Errores y Mejoras\par
+- **Errores Potenciales:**\par
+  - **Escape innecesario en `$cantidad`:** `mysqli_real_escape_string` es para strings; si `cantidad` es INT en DB, genera SQL como `VALUES(..., '10', ...)` \f1\endash  Puede fallar si la columna es estricta (usa `(int)$_POST['cantidad']` sin escape).\par
+  - **Ruta de Upload:** `'../../../register/'` \endash  Si la carpeta no existe, `move_uploaded_file` falla silenciosamente (sin error check). Ruta relativa puede romper si el script se mueve.\par
+  - **No valida upload:** No chequea `$_FILES['portada']['error']` (ej. archivo demasiado grande) ni tipo MIME (puede subir scripts maliciosos). No hay l\f0\'edmite de tama\'f1o.\par
+  - **SQL Vulnerable:** Aunque escapada, concatenaci\'f3n manual es riesgosa; mejor prepared statements (ej. `?` placeholders).\par
+  - **Manejo de Errores:** Si no hay imagen, `exit` sin contexto (mejor redirigir con mensaje). No valida campos obligatorios (ej. si `$_POST['titulo']` vac\'edo).\par
+  - **Redirecci\'f3n:** JS `window.location` funciona, pero si JS est\'e1 deshabilitado, no redirige. Usa `header('Location: ...'); exit;` en PHP.\par
+  - **Seguridad:** No sanitiza nombres de archivos (ej. `$nombreImagen` podr\'eda ser malicioso). Carpeta `register/` deber\'eda tener permisos 755 y no ejecutable.\par
+  - **Consistencia:** Campo POST 'autor' vs columna 'nombreAutor'; columna 'imagen' (\'bfes 'portada' de antes?).\par
+\par
+- **Mejoras Recomendadas:**\par
+  - **Usa Prepared Statements:** Evita concatenaci\'f3n:\par
+    ```php\par
+    $stmt = $conexion->prepare("INSERT INTO libros (tituloLibro, nombreAutor, materia, resumen, imagen, cantidad, estado) VALUES (?, ?, ?, ?, ?, ?, ?)");\par
+    $cantidad = (int)$_POST['cantidad'];  // Cast a int\par
+    $stmt->bind_param("sssssis", $titulo, $nombreAutor, $materia, $resumen, $rutaDestino, $cantidad, $estado);\par
+    $stmt->execute();\par
+    ```\par
+  - **Manejo de Upload Robusto:**\par
+    ```php\par
+    if ($_FILES['portada']['error'] === UPLOAD_ERR_OK) \{\par
+        $uploadDir = '../../../register/';\par
+        if (!file_exists($uploadDir)) mkdir($uploadDir, 0777, true);\par
+        $nombreImagen = basename($_FILES['portada']['name']);  // Sanitiza nombre\par
+        $rutaDestino = $uploadDir . time() . '_' . $nombreImagen;  // Agrega timestamp para unicidad\par
+        if (move_uploaded_file($_FILES['portada']['tmp_name'], $rutaDestino)) \{\par
+            // OK\par
+        \} else \{\par
+            echo "Error al subir imagen"; exit;\par
+        \}\par
+    \} else \{\par
+        echo "Error en upload: " . $_FILES['portada']['error']; exit;\par
+    \}\par
+    ```\par
+  - **Validaciones:** Agrega `if (empty($titulo)) \{ echo "T\'edtulo requerido"; exit; \}`. Verifica extensi\'f3n de imagen (ej. `pathinfo($nombreImagen, PATHINFO_EXTENSION)` en ['jpg', 'png']).\par
+  - **Redirecci\'f3n PHP:** Reemplaza JS con:\par
+    ```php\par
+    if (mysqli_query($conexion, $sql)) \{\par
+        header("Location: ../../../vista/layout/admin/");\par
+        exit;\par
+    \}\par
+    ```\par
+  - **Cierre:** Mueve `mysqli_close($conexion);` antes de cualquier output (despu\'e9s de query).\par
+\par
+Este c\'f3digo funciona para un prototipo b\'e1sico, pero con las mejoras, ser\'eda m\'e1s seguro y robusto. Si necesitas la versi\'f3n corregida completa o integraci\'f3n con el proyecto Arlequin, \'a1h\'e1zmelo saber! \f2\u-10179?\u-8694?\f0\par
+}
+ 

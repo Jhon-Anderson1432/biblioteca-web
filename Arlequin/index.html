@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="shortcut icon" href="assets/Iconos/favicon.png" type="image/x-icon">
+    <title>Prestamo Bibliotecario</title>
+</head>
+<body>
+    <header class="headerInicio">
+        <p><a href="vista/registros.html">Crear cuenta</a></p>
+    </header>
+    <main>
+        <section class="containerPrincipal">
+            <div class="containerInicio"></div>
+            <div class="containerInicio">
+                <div class="titulo">
+                    <h1>Accede</h1><br>
+                    <h2>Iniciá sesión para continuar</h2></div>
+                <div class="formulario">
+                  <form action="controller/administrador/usuario/validacion.php" method="post">
+                    <div class="label"><label for="email" id="label">Email</label></div>
+                    <div class="input"><input type="email" id="input" name="email" placeholder="hola@sitioincreible.com.ar"></div>
+                    <div class="label"><label for="password" id="label">Contraseña</label></div>
+                    <div class="input"><input type="password" id="input" name="password" placeholder="******"></div>
+                    <input type="submit" value="Ingresar" id="inputS">
+                 </form>
+                </div>
+            </div>
+            <div class="containerInicio"></div>
+        </section>
+    </main>
+    <footer class="footer">
+        <p> Prestamo Bibliotecario 2023</p>
+        <p> copyright © Todos los derechos reservados</p>
+    </footer>
+</body>
+</html>

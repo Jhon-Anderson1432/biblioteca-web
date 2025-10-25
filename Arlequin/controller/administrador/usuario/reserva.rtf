@@ -1,0 +1,154 @@
+{\rtf1\ansi\ansicpg1252\deff0\nouicompat\deflang3082{\fonttbl{\f0\fnil\fcharset0 Calibri;}{\f1\fnil Calibri;}{\f2\fnil\fcharset1 Segoe UI Symbol;}}
+{\*\generator Riched20 10.0.19041}\viewkind4\uc1 
+\pard\sa200\sl276\slmult1\f0\fs22\lang10 ### Resumen del C\'f3digo PHP/HTML\par
+\par
+Este script PHP es un **controlador para reservar un libro en un sistema de biblioteca web**, integrado con una p\'e1gina HTML de detalles. Procesa una solicitud GET con el ID del libro (`?id=XX`), verifica la sesi\'f3n del usuario logueado (`$_SESSION['email']`), consulta la base de datos para obtener info del usuario y el libro, y realiza una reserva si la cantidad disponible es >=3 (resta 1 a la cantidad, actualiza estado a "Reservado", e inserta un registro en una tabla de reservas). Muestra una alerta JS de \'e9xito/error y renderiza una p\'e1gina HTML con detalles del libro, datos del usuario y estado de la reserva. El c\'f3digo es ~100 l\'edneas, combina l\'f3gica backend (PHP/MySQL) con frontend (HTML/CSS), pero tiene **inconsistencias graves** (duplicaci\'f3n de conexiones DB, tablas/columnas no uniformes, SQL vulnerable a inyecciones) y errores sint\'e1cticos (HTML roto). Asume un contexto como el proyecto "Arlequin", con tablas como `usuario` y `libros_inscriptos`. No maneja errores robustamente ni cierra conexiones.\par
+\par
+**Prop\'f3sito Principal:** Permitir que un usuario logueado reserve un libro si hay stock suficiente (>=3 unidades), actualizando la DB y mostrando confirmaci\'f3n/visual de detalles.\par
+\par
+**Entrada:** `$_GET['id']` (ID del libro), `$_SESSION['email']` (usuario logueado).\par
+\par
+**Salida:** Actualizaciones/INSERT en DB + p\'e1gina HTML con info del libro/reserva, alertas JS.\par
+\par
+**Dependencias:** \par
+- `../../conexion-bd/conexion_bd.php` (conexi\'f3n DB, pero se ignora por duplicaci\'f3n).\par
+- Nueva conexi\'f3n mysqli manual (`$conn`).\par
+- CSS: `../../../css/index.css`.\par
+- Assets: Iconos en `../../../assets/Iconos/`.\par
+- Tablas DB: `usuario` (usuarios), `libros_inscriptos` (libros), `libros_reservados` (reservas).\par
+\par
+**Limitaciones:** L\'f3gica r\'edgida (reserva solo si >=3, no <3), no valida sesi\'f3n/email, vulnerable a ataques, y HTML con errores que rompen la p\'e1gina.\par
+\par
+### Explicaci\'f3n Paso a Paso\par
+\par
+El c\'f3digo se divide en dos partes principales: **PHP backend** (l\'f3gica de reserva y queries DB) y **HTML frontend** (renderizado de p\'e1gina). Se ejecuta al acceder a algo como `reservar.php?id=5`. Aqu\'ed va el flujo detallado:\par
+\par
+#### 1. **Inicializaci\'f3n y Configuraci\'f3n (L\'edneas ~1-10)**\par
+   - `session_start();` \f1\endash  Inicia/reanuda la sesi\f0\'f3n PHP para acceder a `$_SESSION['email']` (asumiendo login previo).\par
+   - `include '../../conexion-bd/conexion_bd.php';` \f1\endash  Carga un archivo de conexi\f0\'f3n (probablemente define `$conexion`), pero **se ignora completamente** porque luego se crea una nueva conexi\'f3n manual.\par
+   - `$id = $_GET["id"]; $user = $_SESSION['email'];` \f1\endash  Obtiene ID del libro de la URL y email del usuario de la sesi\f0\'f3n.\par
+     - **Sin validaci\'f3n:** No chequea si `$id` es num\'e9rico o existe (posible error si GET vac\'edo).\par
+   - Nueva conexi\'f3n DB manual:\par
+     ```php\par
+     $host = "localhost"; $username = "root"; $password = ""; $dbname = "biblioteca";\par
+     $conn = new mysqli($host, $username, $password, $dbname);\par
+     ```\par
+     - Crea un objeto `$conn` para MySQL (DB "biblioteca", credenciales por defecto de XAMPP).\par
+     - **Problema:** Duplica la conexi\'f3n del include (innecesario y confuso; usa solo una). Si falla (ej. DB no existe), crashea sin manejo.\par
+   - Variables fijas: `$estado = "Reservado"; $motivo = "Libro agotado"; $FecHr = date('Y-m-d H:i:s');` \f1\endash  Prepara estado para reserva, motivo por defecto (cambia despu\f0\'e9s), y fecha/hora actual (formato MySQL).\par
+\par
+#### 2. **Consulta de Datos del Usuario (L\'edneas ~11-20)**\par
+   - `$sql = "SELECT * FROM usuario WHERE email = '$user'";` \f1\endash  Query para obtener datos del usuario por email.\par
+     - Tabla: `usuario` (nota: inconsistente con previos c\f0\'f3digos como `usuarios`).\par
+     - **Vulnerable:** Concatenaci\'f3n directa de `$user` (SQL injection si email malicioso).\par
+   - `$result = $conn->query($sql);` \f1\endash  Ejecuta query.\par
+   - `if ($result->num_rows > 0) \{ $row = $result->fetch_assoc(); ... \}` \endash  Si existe (1 fila):\par
+     - Extrae: `$nombre`, `$apellido`, `$documento`, `$correo` (de columnas de la tabla).\par
+   - `else \{ echo "usuario no encontrado"; \}` \endash  Mensaje simple si no existe (no redirige; p\f0\'e1gina contin\'faa).\par
+     - **Problema:** No valida si sesi\'f3n es v\'e1lida; si email no en DB, usa variables undefined despu\'e9s.\par
+\par
+#### 3. **Consulta de Datos del Libro (L\'edneas ~21-35)**\par
+   - `$sql = "SELECT * FROM libros_inscriptos WHERE id = '$id'";` \f1\endash  Query para el libro por ID.\par
+     - Tabla: `libros_inscriptos` (inconsistente con previos como `libros` o `libros` con columnas camelCase).\par
+     - **Vulnerable:** Concatenaci\f0\'f3n de `$id` (SQL injection posible).\par
+   - `$result = $conn->query($sql);` \f1\endash  Ejecuta.\par
+   - `if ($result->num_rows > 0) \{ $row = $result->fetch_assoc(); ... \}` \endash  Si existe:\par
+     - Extrae: `$titulo = $row["titulo_libro"]; $autor = $row["nombreAutor"]; $imagen = $row["imagen_libro"]; $descripcion = $row["prologo"]; $precio = $row["estado"]; $cantidad = $row["cantidad"];`\par
+       - Nota: `$cantidad;` al final es redundante (no hace nada).\par
+     - Columnas: Mezcla snake_case (`titulo_libro`) y camelCase (`nombreAutor`), inconsistente con fixes previos (ej. `tituloLibro`).\par
+   - `else \{ echo "libro no encontrado"; \}` \endash  Mensaje simple (contin\f0\'faa p\'e1gina).\par
+     - **Problema:** Si no existe, variables como `$titulo` son undefined, causando warnings en HTML despu\'e9s.\par
+\par
+#### 4. **L\'f3gica de Reserva (L\'edneas ~36-55)**\par
+   - `if ($cantidad >= 3) \{ ... \}` \f1\endash  Chequea stock (l\f0\'f3gica arbitraria: reserva solo si >=3; resta 1).\par
+     - **Si s\'ed (stock suficiente):**\par
+       - `$cantidad = $cantidad - 1;` \f1\endash  Resta 1 (pero no actualiza DB a\f0\'fan).\par
+       - UPDATE: `$reserva = "UPDATE libros_inscriptos SET estado ='$estado', cantidad='$cantidad' WHERE id ='$id'"; $resultado = mysqli_query($conn, $reserva);`\par
+         - Actualiza estado a "Reservado" y cantidad en la tabla de libros.\par
+         - **Vulnerable:** Concatenaci\'f3n sin escape.\par
+         - Nota: Mezcla `$conn->query()` con `mysqli_query($conn, ...)` (funciona, pero inconsistente; usa uno).\par
+       - INSERT: `$reservarcion = "INSERT INTO libros_reservados (titulo_Libro, nombre_autor, correo_estudiante, documento_estidiante, fecha_reserva) VALUES ('$titulo','$autor','$correo','$documento','$FecHr')"; $resultado = mysqli_query($conn, $reservarcion);`\par
+         - Crea registro de reserva en tabla `libros_reservados` (columnas con typos: `titulo_Libro`, `nombre_autor`, `documento_estidiante` \f1\endash  deber\f0\'eda ser "estudiante").\par
+         - **Vulnerable:** Concatenaci\'f3n.\par
+       - `$motivo = "Libro con disponibilidad";` \f1\endash  Cambia motivo a positivo.\par
+       - Alerta JS: `<script> alert("Reservado") </script>` \endash  Muestra popup de \f0\'e9xito.\par
+     - **Si no (stock <3):**\par
+       - Alerta JS: `<script> alert("No Reservado, libro agotado"); </script>`\par
+       - `$estado = "No reservado";` \f1\endash  Actualiza variable (pero no actualiza DB; solo para display).\par
+     - **Problemas L\f0\'f3gicos:** \par
+       - No verifica si UPDATE/INSERT fallan (usa `$resultado` pero no chequea `if($resultado)`).\par
+       - Motivo inicial "Libro agotado" se usa solo si <3, pero no se actualiza DB.\par
+       - No maneja concurrencia (dos usuarios reservando al mismo tiempo podr\'edan sobre-restar cantidad).\par
+       - Umbral >=3 es arbitrario (\'bfpor qu\'e9 no >=1?).\par
+\par
+#### 5. **Renderizado HTML (L\'edneas ~56-fin)**\par
+   - `<!DOCTYPE html> ... <html lang="en">` \f1\endash  Estructura b\f0\'e1sica de p\'e1gina (t\'edtulo "Reservar").\par
+   - **Head:** Meta tags, CSS (`index.css`), favicon (doble slash en path: `../../../assets//Iconos/` \f1\endash  typo menor).\par
+   - **Header:** \par
+     - Logo, enlace a inicio (`../../../vista/layout/usuario/index.php`).\par
+     - Enlace a logout (`../admin/cerrar_sesion.php` \endash  path relativo inconsistente).\par
+     - Perfil: Muestra `$_SESSION['email']` en <h2>.\par
+     - **Error:** `<hea class="headerInicio-Usuario">` \endash  Debe ser `<header class="...">` (tag roto).\par
+   - **Main > Section (.contenedor-detalle):**\par
+     - Muestra imagen del libro: `echo "<img src='$imagen' alt='$titulo'>";` (sin escape; posible XSS si `$imagen` maliciosa).\par
+     - Detalles: T\f0\'edtulo (<h1>), autor, estado (`$precio` que es el estado original del libro).\par
+     - Resumen: Datos del usuario (nombre, apellido, documento), estado de reserva (`$estado`), motivo (`$motivo`), fecha (`$FecHr`).\par
+       - Nota: Re-declara `$autor`, `$imagen`, etc., redundante (ya extra\'eddas antes).\par
+     - Botones: Uno con estado (`<button><?php echo $estado; ?></button>`), otro enlace a Google Search para m\'e1s info (con `target='_blank'` para seguridad).\par
+       - **Error:** Enlace roto: `<?php echo "<a href='https://www.google.com/search?q=$titulo' target='_blank' rel='noopener noreferrer'>Mas informaci\'f3n<a/>" ?>` \f1\endash  Falta cierre `</a>` y slash extra en `<a/>`.\par
+   - **Footer:** Vac\f0\'edo.\par
+   - **Problema General:** Si queries fallan (ej. libro no encontrado), variables undefined causan warnings (ej. "Undefined variable: $titulo"). No hay condicionales para mostrar "No encontrado".\par
+\par
+#### 6. **Cierre y Ejecuci\'f3n**\par
+   - No cierra conexiones (`$conn->close();` \f1\endash  buena pr\f0\'e1ctica faltante).\par
+   - El script siempre renderiza HTML, incluso si reserva falla o datos no existen (p\'e1gina parcial/rota).\par
+\par
+### Posibles Errores y Mejoras\par
+- **Errores Cr\'edticos:**\par
+  - **Seguridad - SQL Injection:** Todas las queries concatenan variables sin escape (ej. `$user`, `$id`). Un atacante puede manipular GET/SESSION para inyectar SQL (ej. `id=1'; DROP TABLE usuario; --`).\par
+  - **Inconsistencias DB:** Tablas (`usuario` vs `usuarios`, `libros_inscriptos` vs `libros`) y columnas (`titulo_libro` vs `tituloLibro`, typos como `documento_estidiante`) no coinciden con c\'f3digos previos. Causa "Unknown table/column".\par
+  - **Duplicaci\'f3n de Conexi\'f3n:** Include + nueva mysqli; usa solo la del include (`$conexion`).\par
+  - **HTML/Sintaxis:** Tag `<hea>` inv\'e1lido (rompe render), comilla extra al final de `<div class="texto">`, enlace Google roto (`<a/>`), paths inconsistentes (ej. `../admin/` vs `../../../vista/`).\par
+  - **L\'f3gica D\'e9bil:** No valida sesi\'f3n (`if (!isset($_SESSION['email'])) \{ header('Location: login.php'); \}`). Si cantidad <0 despu\'e9s de resta, no previene. No chequea errores de query (ej. `if (!$resultado) \{ echo $conn->error; \}`).\par
+  - **Seguridad Adicional:** Outputs no escapados (XSS en `echo "<img src='$imagen' ..."`; usa `htmlspecialchars($imagen)`). Enlace Google usa `$titulo` sin encode (URL injection).\par
+  - **Performance:** Queries sin \'edndices (ej. en `email`, `id`); fecha hardcodeada.\par
+\par
+- **Mejoras Recomendadas (Versi\'f3n Segura y Limpia):**\par
+  - **Una Conexi\'f3n + Prepared Statements:**\par
+    ```php\par
+    session_start();\par
+    include '../../conexion-bd/conexion_bd.php';  // Usa $conexion\par
+    if (!isset($_SESSION['email']) || !is_numeric($_GET['id'])) \{ header('Location: login.php'); exit; \}\par
+    $id = (int)$_GET['id']; $user = $_SESSION['email'];\par
+\par
+    // Prepared para usuario\par
+    $stmt = $conexion->prepare("SELECT * FROM usuarios WHERE email = ?");  // Tabla corregida\par
+    $stmt->bind_param("s", $user);\par
+    $stmt->execute(); $result = $stmt->get_result();\par
+    if ($row = $result->fetch_assoc()) \{ /* extrae datos */ \} else \{ echo "Usuario no encontrado"; exit; \}\par
+\par
+    // Similar para libro (tabla 'libros')\par
+    $stmt = $conexion->prepare("SELECT * FROM libros WHERE id = ?");\par
+    $stmt->bind_param("i", $id); /* ... */\par
+\par
+    // L\'f3gica de reserva con prepared\par
+    if ($cantidad >= 1) \{  // Cambi\'e9 umbral a >=1\par
+        $stmt_update = $conexion->prepare("UPDATE libros SET estado = ?, cantidad = ? WHERE id = ?");\par
+        $nueva_cantidad = $cantidad - 1;\par
+        $stmt_update->bind_param("sii", $estado, $nueva_cantidad, $id);\par
+        if ($stmt_update->execute()) \{\par
+            $stmt_insert = $conexion->prepare("INSERT INTO reservas (titulo, autor, correo, documento, fecha) VALUES (?, ?, ?, ?, ?)");\par
+            $stmt_insert->bind_param("sssss", $titulo, $autor, $correo, $documento, $FecHr);\par
+            if ($stmt_insert->execute()) \{ echo "<script>alert('Reservado');</script>"; \}\par
+        \}\par
+    \} else \{ echo "<script>alert('Libro agotado');</script>"; \}\par
+    $conexion->close();\par
+    ```\par
+  - **Corregir HTML:** Usa `<header>`, cierra tags correctamente, escapa variables: `<?php echo htmlspecialchars($titulo); ?>`.\par
+  - **Mejoras L\'f3gicas:** Agrega transacciones DB (`$conexion->begin_transaction(); ... commit();`) para atomicidad. Valida stock con SELECT + UPDATE at\'f3mico (usa `UPDATE ... WHERE cantidad >=1`). Redirige despu\'e9s de reserva (ej. a listado).\par
+  - **UI/UX:** Usa modales en lugar de alertas JS. Agrega condicional: Si no reservado, deshabilita bot\'f3n.\par
+  - **DB:** Unifica tablas (usa `usuarios`, `libros`, `reservas`). Agrega \'edndices: `ALTER TABLE libros ADD INDEX(idx_id, cantidad);`.\par
+\par
+Este c\'f3digo tiene potencial para una reserva simple, pero necesita fixes urgentes para seguridad y consistencia. Si quieres la versi\'f3n corregida completa o integraci\'f3n con el proyecto, \'a1dime! \f2\u-10179?\u-8694?\f0\par
+}
+ 
